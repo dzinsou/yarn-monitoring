@@ -7,6 +7,14 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+.idea
+*.iml
+core-site.xml
+hdfs-site.xml
+yarn-site.xml
+dzinsou.keytab
+application_*
+conf/
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
