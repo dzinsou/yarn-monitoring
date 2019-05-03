@@ -23,7 +23,7 @@ public class GetContainerList {
     private UserGroupInformation ugi;
     private Configuration conf;
 
-    public GetContainerList(UserGroupInformation ugi, Configuration conf) {
+    GetContainerList(UserGroupInformation ugi, Configuration conf) {
         this.ugi = ugi;
         this.conf = conf;
     }
@@ -64,7 +64,7 @@ public class GetContainerList {
         }
     }
 
-    public List<Container> getCompletedContainerList(Long minStamp, Long maxStamp) throws IOException {
+    List<Container> getCompletedContainerList(Long minStamp, Long maxStamp) throws IOException {
         List<Container> containerList = new ArrayList<>();
 
         this.ugi.checkTGTAndReloginFromKeytab();
@@ -108,7 +108,9 @@ public class GetContainerList {
                                     container.setAllocatedMemorySize(containerReport.getAllocatedResource().getMemorySize());
                                     container.setAllocatedVirtualCores(containerReport.getAllocatedResource().getVirtualCores());
                                     container.setContainerExitStatus(containerReport.getContainerExitStatus());
-                                    container.setContainerState(containerReport.getContainerState().name());
+                                    if (containerReport.getContainerState() != null) {
+                                        container.setContainerState(containerReport.getContainerState().name());
+                                    }
                                     container.setCreationTime(containerReport.getCreationTime());
                                     container.setFinishTime(containerReport.getFinishTime());
                                     container.setLogUrl(containerReport.getLogUrl());

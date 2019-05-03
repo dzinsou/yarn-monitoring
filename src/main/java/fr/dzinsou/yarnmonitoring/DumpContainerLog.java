@@ -19,7 +19,7 @@ public class DumpContainerLog {
     private UserGroupInformation ugi;
     private Configuration conf;
 
-    public DumpContainerLog(UserGroupInformation ugi, Configuration conf) {
+    DumpContainerLog(UserGroupInformation ugi, Configuration conf) {
         this.ugi = ugi;
         this.conf = conf;
     }
@@ -60,7 +60,7 @@ public class DumpContainerLog {
         }
     }
 
-    public int dumpAggregatedContainerLogs(String appIdStr, String containerIdStr, String outputLocalDir) throws IOException {
+    int dumpAggregatedContainerLogs(String appIdStr, String containerIdStr, String outputLocalDir) throws IOException {
         this.ugi.checkTGTAndReloginFromKeytab();
         try {
             return this.ugi.doAs((PrivilegedExceptionAction<Integer>) () -> {

@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class HadoopUtil {
+class HadoopUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(HadoopUtil.class);
 
-    public static Configuration getConfiguration(String confResourceList) {
+    static Configuration getConfiguration(String confResourceList) {
         Configuration conf = new Configuration();
         for (String confResource : confResourceList.split(",")) {
             LOGGER.info("Adding this configuration resource: [{}]", confResource);
@@ -21,7 +21,7 @@ public class HadoopUtil {
         return conf;
     }
 
-    public static UserGroupInformation getUGI(Configuration conf, String user, String keytab) throws IOException {
+    static UserGroupInformation getUGI(Configuration conf, String user, String keytab) throws IOException {
         UserGroupInformation.setConfiguration(conf);
         return UserGroupInformation.loginUserFromKeytabAndReturnUGI(user, keytab);
     }
