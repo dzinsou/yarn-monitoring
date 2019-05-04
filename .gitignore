@@ -15,6 +15,7 @@ yarn-site.xml
 dzinsou.keytab
 application_*
 conf/
+*.tgz
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar

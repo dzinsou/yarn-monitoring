@@ -1,9 +1,10 @@
 package fr.dzinsou.yarnmonitoring;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.dzinsou.yarnmonitoring.domain.Container;
 import fr.dzinsou.yarnmonitoring.domain.LogEvent;
+import fr.dzinsou.yarnmonitoring.output.AbstractOutput;
+import fr.dzinsou.yarnmonitoring.output.ElasticsearchOutput;
 import fr.dzinsou.yarnmonitoring.output.KafkaOutput;
 import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
@@ -16,79 +17,88 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class LogCollector {
     private final static Logger LOGGER = LoggerFactory.getLogger(LogCollector.class);
 
+    private GetContainerList getContainerList;
+
     private DumpContainerLog dumpContainerLog;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private LogCollector(UserGroupInformation ugi, Configuration conf) {
+    private AppConfig appConfig;
+
+    private LogCollector(AppConfig appConfig) throws IOException {
+        this.appConfig = appConfig;
+        Configuration conf = HadoopUtil.getConfiguration(appConfig.getHadoopConf());
+        UserGroupInformation ugi = HadoopUtil.getUGI(conf, appConfig.getHadoopUser(), appConfig.getHadoopKeytab());
+        this.getContainerList = new GetContainerList(ugi, conf);
         this.dumpContainerLog = new DumpContainerLog(ugi, conf);
     }
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws ParseException, IOException {
         Options options = new Options();
-        options.addOption("conf", "conf", true, "Configuration resource list");
-        options.addOption("user", "user", true, "User");
-        options.addOption("keytab", "keytab", true, "Keytab");
+        options.addOption("conf", "conf", true, "Application configuration");
         options.addOption("mints", "mints", true, "Minimum creation time");
         options.addOption("maxts", "maxts", true, "Maximum creation time");
-        options.addOption("output_conf", "output_conf", true, "Output Kafka configuration");
-        options.addOption("output_topic", "output_topic", true, "Output Kafka topic");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = parser.parse(options, args);
 
-        String confResourceList = cmd.getOptionValue("conf");
-        String user = cmd.getOptionValue("user");
-        String keytab = cmd.getOptionValue("keytab");
+        String appConfigFile = cmd.getOptionValue("conf");
         Long minStamp = Long.parseLong(cmd.getOptionValue("mints"));
         Long maxStamp = Long.parseLong(cmd.getOptionValue("maxts"));
-        String outputConf = cmd.getOptionValue("output_conf");
-        String outputTopic = cmd.getOptionValue("output_topic");
 
-        LOGGER.info("conf        : [{}]", confResourceList);
-        LOGGER.info("user        : [{}]", user);
-        LOGGER.info("keytab      : [{}]", keytab);
-        LOGGER.info("mints       : [{}]", minStamp);
-        LOGGER.info("maxts       : [{}]", maxStamp);
-        LOGGER.info("output_conf : [{}]", outputConf);
-        LOGGER.info("output_topic: [{}]", outputTopic);
+        AppConfig appConfig = AppUtil.loadAppConfig(appConfigFile);
 
-        try (KafkaOutput kafkaOutput = new KafkaOutput(outputConf)) {
-            Configuration conf = HadoopUtil.getConfiguration(confResourceList);
-            UserGroupInformation ugi = HadoopUtil.getUGI(conf, user, keytab);
+        LOGGER.info("LogCollector - FROM [{}] TO [{}]", minStamp, maxStamp);
 
-            GetContainerList getContainerList = new GetContainerList(ugi, conf);
-            LogCollector logCollector = new LogCollector(ugi, conf);
+        List<AbstractOutput> outputList = new ArrayList<>();
+        for (String outputType : appConfig.getOutputTypeArray()) {
+            if (outputType.equals("kafka")) {
+                KafkaOutput kafkaOutput = new KafkaOutput(appConfig);
+                outputList.add(kafkaOutput);
+            } else if (outputType.equals("elasticsearch")) {
+                ElasticsearchOutput elasticsearchOutput = new ElasticsearchOutput(appConfig);
+                outputList.add(elasticsearchOutput);
+            }
+        }
+
+        try {
+            LogCollector logCollector = new LogCollector(appConfig);
 
             LOGGER.info("Getting completed container list");
-            List<Container> containerList = getContainerList.getCompletedContainerList(minStamp, maxStamp);
+            List<Container> containerList = logCollector.getGetContainerList().getCompletedContainerList(minStamp, maxStamp);
             LOGGER.info("Found [{}] completed containers", containerList.size());
 
             for (Container container : containerList) {
-                logCollector.processLogs(container, kafkaOutput, outputTopic);
+                logCollector.processLogs(container, outputList);
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
+        } finally {
+            for (AbstractOutput output : outputList) {
+                output.close();
+            }
         }
     }
 
-    private void processLogs(Container container, KafkaOutput kafkaOutput, String outputTopic) throws IOException {
+    private void processLogs(Container container, List<AbstractOutput> outputList) throws IOException {
         LOGGER.info("Processing logs of container: [{}]", objectMapper.writeValueAsString(container));
         int dumpResult = dumpContainerLog.dumpAggregatedContainerLogs(container.getAppId(), container.getContainerId(), container.getContainerId());
         LOGGER.info("Dump logs result for container [{}]: [{}]", container.getContainerId(), dumpResult);
         if (dumpResult == 0) {
-            this.readDumpedLogs(container, kafkaOutput, outputTopic);
+            this.readDumpedLogs(container, outputList);
         }
     }
 
-    private void readDumpedLogs(Container container, KafkaOutput kafkaOutput, String outputTopic) throws IOException {
+    private void readDumpedLogs(Container container, List<AbstractOutput> outputList) throws IOException {
         File directory = new File(container.getContainerId());
         for (File file : FileUtils.listFiles(directory, null, true)) {
             if (file.isFile()) {
@@ -99,6 +109,9 @@ public class LogCollector {
                 AtomicReference<Long> logLength = new AtomicReference<>();
                 AtomicBoolean isLogContent = new AtomicBoolean(false);
                 AtomicReference<Long> logLine = new AtomicReference<>();
+
+                List<LogEvent> bulkRecordList = new ArrayList<>();
+                AtomicLong totalSent = new AtomicLong(0L);
 
                 Files.lines(Paths.get(file.getAbsolutePath())).forEach(line -> {
                     if (line.startsWith("LogType:")) {
@@ -123,18 +136,58 @@ public class LogCollector {
                         logEvent.setLogLength(logLength.get());
                         logEvent.setLogContent(line);
                         logEvent.setLogLine(logLine.get());
-                        try {
-                            LOGGER.trace(objectMapper.writeValueAsString(logEvent));
-                            kafkaOutput.sendMessage(outputTopic, null, objectMapper.writeValueAsString(logEvent));
-                        } catch (JsonProcessingException e) {
-                            LOGGER.error(e.getMessage());
-                        }
+                        String id = String.format("%s|%s|%d", logEvent.getContainerInfo().getContainerId(), logEvent.getLogType(), logEvent.getLogLine());
+                        logEvent.setId(id);
+                        bulkRecordList.add(logEvent);
                         logLine.set(logLine.get() + 1);
+
+                        // Save to output
+                        if (bulkRecordList.size() % this.appConfig.getOutputBatchSize() == 0) {
+                            LOGGER.info("[{}] Pushing [{}] records to output - Total records => [{}]", container.getContainerId(), bulkRecordList.size(), totalSent.get() + bulkRecordList.size());
+                            this.bulkSaveLogEvent(bulkRecordList, outputList);
+                            totalSent.addAndGet(bulkRecordList.size());
+                            bulkRecordList.clear();
+                            try {
+                                LOGGER.debug("Pause for {}ms", this.appConfig.getOutputBatchInterval());
+                                Thread.sleep(this.appConfig.getOutputBatchInterval());
+                            } catch (InterruptedException e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        }
                     } else {
                         LOGGER.info(line);
                     }
                 });
+
+                if (bulkRecordList.size() > 0) {
+                    LOGGER.info("[{}] Pushing [{}] records to output - Total records => [{}]", container.getContainerId(), bulkRecordList.size(), totalSent.get() + bulkRecordList.size());
+                    totalSent.addAndGet(bulkRecordList.size());
+                    this.bulkSaveLogEvent(bulkRecordList, outputList);
+                }
             }
         }
+    }
+
+    private void bulkSaveLogEvent(List<LogEvent> bulkRecordList, List<AbstractOutput> outputList) {
+        try {
+            List<String> idList = new ArrayList<>();
+            List<String> partitionIdList = new ArrayList<>();
+            List<String> jsonRecordList = new ArrayList<>();
+            for (LogEvent logEvent : bulkRecordList) {
+                idList.add(logEvent.getId());
+                partitionIdList.add(logEvent.getContainerInfo().getContainerId());
+                jsonRecordList.add(objectMapper.writeValueAsString(logEvent));
+            }
+
+            for (AbstractOutput output : outputList) {
+                output.bulkSave(idList, partitionIdList, jsonRecordList, this.appConfig.getOutputAsync());
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+        }
+    }
+
+    private GetContainerList getGetContainerList() {
+        return getContainerList;
     }
 }

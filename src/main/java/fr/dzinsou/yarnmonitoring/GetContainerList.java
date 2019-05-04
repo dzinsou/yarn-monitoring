@@ -5,6 +5,7 @@ import fr.dzinsou.yarnmonitoring.domain.Container;
 import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.api.protocolrecords.GetApplicationsRequest;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.exceptions.ApplicationNotFoundException;
@@ -74,7 +75,10 @@ public class GetContainerList {
                     yarnClient.init(conf);
                     yarnClient.start();
                     // Get applications
-                    for (ApplicationReport application : yarnClient.getApplications(EnumSet.of(YarnApplicationState.FINISHED, YarnApplicationState.KILLED, YarnApplicationState.FAILED))) {
+                    GetApplicationsRequest getApplicationsRequest = GetApplicationsRequest.newInstance();
+                    getApplicationsRequest.setStartRange(minStamp, maxStamp);
+                    getApplicationsRequest.setApplicationStates(EnumSet.of(YarnApplicationState.FINISHED, YarnApplicationState.KILLED, YarnApplicationState.FAILED));
+                    for (ApplicationReport application : yarnClient.getApplications(getApplicationsRequest)) {
                         // Get application attempts
                         for (ApplicationAttemptReport applicationAttempt : yarnClient.getApplicationAttempts(application.getApplicationId())) {
                             ApplicationAttemptId applicationAttemptId = applicationAttempt.getApplicationAttemptId();
@@ -87,36 +91,33 @@ public class GetContainerList {
                             }
 
                             for (ContainerReport containerReport : containerReportList) {
-                                Long containerCreationTime = containerReport.getCreationTime();
-                                if (containerCreationTime >= minStamp && containerCreationTime <= maxStamp) {
-                                    Container container = new Container();
-                                    container.setContainerId(containerReport.getContainerId().toString());
-                                    container.setAppId(application.getApplicationId().toString());
-                                    container.setAppName(application.getName());
-                                    container.setAppType(application.getApplicationType());
-                                    container.setAppState(application.getYarnApplicationState().name());
-                                    container.setAppFinalStatus(application.getFinalApplicationStatus().name());
-                                    if (application.getLogAggregationStatus() != null) {
-                                        String logAggStatus = application.getLogAggregationStatus().name();
-                                        container.setAppLogAggStatus(logAggStatus);
-                                    }
-                                    container.setAppAttemptId(applicationAttemptId.toString());
-                                    container.setQueue(application.getQueue());
-                                    container.setUser(application.getUser());
-                                    container.setAssignedNodeId(containerReport.getAssignedNode().toString());
-                                    container.setAssignedNodeHttpAddress(containerReport.getNodeHttpAddress());
-                                    container.setAllocatedMemorySize(containerReport.getAllocatedResource().getMemorySize());
-                                    container.setAllocatedVirtualCores(containerReport.getAllocatedResource().getVirtualCores());
-                                    container.setContainerExitStatus(containerReport.getContainerExitStatus());
-                                    if (containerReport.getContainerState() != null) {
-                                        container.setContainerState(containerReport.getContainerState().name());
-                                    }
-                                    container.setCreationTime(containerReport.getCreationTime());
-                                    container.setFinishTime(containerReport.getFinishTime());
-                                    container.setLogUrl(containerReport.getLogUrl());
-                                    container.setPriority(containerReport.getPriority().getPriority());
-                                    containerList.add(container);
+                                Container container = new Container();
+                                container.setContainerId(containerReport.getContainerId().toString());
+                                container.setAppId(application.getApplicationId().toString());
+                                container.setAppName(application.getName());
+                                container.setAppType(application.getApplicationType());
+                                container.setAppState(application.getYarnApplicationState().name());
+                                container.setAppFinalStatus(application.getFinalApplicationStatus().name());
+                                if (application.getLogAggregationStatus() != null) {
+                                    String logAggStatus = application.getLogAggregationStatus().name();
+                                    container.setAppLogAggStatus(logAggStatus);
                                 }
+                                container.setAppAttemptId(applicationAttemptId.toString());
+                                container.setQueue(application.getQueue());
+                                container.setUser(application.getUser());
+                                container.setAssignedNodeId(containerReport.getAssignedNode().toString());
+                                container.setAssignedNodeHttpAddress(containerReport.getNodeHttpAddress());
+                                container.setAllocatedMemorySize(containerReport.getAllocatedResource().getMemorySize());
+                                container.setAllocatedVirtualCores(containerReport.getAllocatedResource().getVirtualCores());
+                                container.setContainerExitStatus(containerReport.getContainerExitStatus());
+                                if (containerReport.getContainerState() != null) {
+                                    container.setContainerState(containerReport.getContainerState().name());
+                                }
+                                container.setCreationTime(containerReport.getCreationTime());
+                                container.setFinishTime(containerReport.getFinishTime());
+                                container.setLogUrl(containerReport.getLogUrl());
+                                container.setPriority(containerReport.getPriority().getPriority());
+                                containerList.add(container);
                             }
                         }
                     }

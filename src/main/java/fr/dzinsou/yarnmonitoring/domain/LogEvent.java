@@ -1,12 +1,21 @@
 package fr.dzinsou.yarnmonitoring.domain;
 
 public class LogEvent {
+    private String id;
     private Container containerInfo;
     private String logType;
     private String logLastModifiedTime;
     private Long logLength;
     private String logContent;
     private Long logLine;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public Container getContainerInfo() {
         return containerInfo;

@@ -6,7 +6,7 @@
 
     <groupId>fr.dzinsou</groupId>
     <artifactId>yarn-monitoring</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -15,9 +15,16 @@
         <commons-cli.version>1.4</commons-cli.version>
         <hadoop.version>3.1.1</hadoop.version>
         <kafka.version>1.0.0.2.6.5.79-2</kafka.version>
+        <elasticsearch.version>7.0.1</elasticsearch.version>
     </properties>
 
     <dependencies>
+        <!-- Elasticsearch -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <scope>compile</scope>
+        </dependency>
         <!-- Kafka -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -90,6 +97,12 @@
                 <artifactId>kafka_2.11</artifactId>
                 <version>${kafka.version}</version>
             </dependency>
+            <!-- Elasticsearch -->
+            <dependency>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                <version>${elasticsearch.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -130,6 +143,15 @@
             <id>hortonworks.public</id>
             <name>Hortonworks Public</name>
             <url>http://repo.hortonworks.com/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <layout>default</layout>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
