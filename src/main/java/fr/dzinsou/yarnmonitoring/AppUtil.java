@@ -34,7 +34,7 @@ public class AppUtil {
         LOGGER.info("app.output.elasticsearch.requestTimeout: [{}]", appProperties.getProperty("app.output.elasticsearch.requestTimeout"));
 
         AppConfig appConfig = new AppConfig();
-        appConfig.setHadoopCluster(appProperties.getProperty("app.hadoop.conf"));
+        appConfig.setHadoopCluster(appProperties.getProperty("app.hadoop.cluster"));
         appConfig.setHadoopConf(appProperties.getProperty("app.hadoop.conf"));
         appConfig.setHadoopUser(appProperties.getProperty("app.hadoop.user"));
         appConfig.setHadoopKeytab(appProperties.getProperty("app.hadoop.keytab"));
