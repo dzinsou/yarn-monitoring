@@ -16,9 +16,10 @@ public class AppUtil {
             appProperties.load(fileReader);
         }
 
+        LOGGER.info("app.hadoop.cluster                     : [{}]", appProperties.getProperty("app.hadoop.cluster"));
         LOGGER.info("app.hadoop.conf                        : [{}]", appProperties.getProperty("app.hadoop.conf"));
         LOGGER.info("app.hadoop.user                        : [{}]", appProperties.getProperty("app.hadoop.user"));
-        LOGGER.info("app.hadoop.keytab                      : [{}]",appProperties.getProperty("app.hadoop.keytab"));
+        LOGGER.info("app.hadoop.keytab                      : [{}]", appProperties.getProperty("app.hadoop.keytab"));
         LOGGER.info("app.output.type                        : [{}]", appProperties.getProperty("app.output.type"));
         LOGGER.info("app.output.batch.size                  : [{}]", appProperties.getProperty("app.output.batch.size"));
         LOGGER.info("app.output.batch.interval              : [{}]", appProperties.getProperty("app.output.batch.interval"));
@@ -33,6 +34,7 @@ public class AppUtil {
         LOGGER.info("app.output.elasticsearch.requestTimeout: [{}]", appProperties.getProperty("app.output.elasticsearch.requestTimeout"));
 
         AppConfig appConfig = new AppConfig();
+        appConfig.setHadoopCluster(appProperties.getProperty("app.hadoop.conf"));
         appConfig.setHadoopConf(appProperties.getProperty("app.hadoop.conf"));
         appConfig.setHadoopUser(appProperties.getProperty("app.hadoop.user"));
         appConfig.setHadoopKeytab(appProperties.getProperty("app.hadoop.keytab"));
@@ -44,13 +46,6 @@ public class AppUtil {
             if (outputType.equals("kafka")) {
                 appConfig.setOutputKafkaConf(appProperties.getProperty("app.output.kafka.conf"));
                 appConfig.setOutputKafkaTopic(appProperties.getProperty("app.output.kafka.topic"));
-            } else if (outputType.equals("elasticsearch")) {
-                appConfig.setOutputElasticsearchHttpHostArray(appProperties.getProperty("app.output.elasticsearch.httpHosts").split(","));
-                appConfig.setOutputElasticsearchHttpPort(Integer.valueOf(appProperties.getProperty("app.output.elasticsearch.httpPort")));
-                appConfig.setOutputElasticsearchHttpScheme(appProperties.getProperty("app.output.elasticsearch.httpScheme"));
-                appConfig.setOutputElasticsearchIndexPattern(appProperties.getProperty("app.output.elasticsearch.indexPattern"));
-                appConfig.setOutputElasticsearchDocType(appProperties.getProperty("app.output.elasticsearch.docType"));
-                appConfig.setOutputElasticsearchRequestTimeout(appProperties.getProperty("app.output.elasticsearch.requestTimeout"));
             }
         }
 

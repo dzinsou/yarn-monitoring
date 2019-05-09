@@ -2,12 +2,21 @@ package fr.dzinsou.yarnmonitoring.domain;
 
 public class LogEvent {
     private String id;
+    private String cluster;
     private Container containerInfo;
     private String logType;
     private String logLastModifiedTime;
     private Long logLength;
     private String logContent;
     private Long logLine;
+
+    public String getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
+    }
 
     public String getId() {
         return id;

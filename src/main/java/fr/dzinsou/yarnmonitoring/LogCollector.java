@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.dzinsou.yarnmonitoring.domain.Container;
 import fr.dzinsou.yarnmonitoring.domain.LogEvent;
 import fr.dzinsou.yarnmonitoring.output.AbstractOutput;
-import fr.dzinsou.yarnmonitoring.output.ElasticsearchOutput;
 import fr.dzinsou.yarnmonitoring.output.KafkaOutput;
 import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
@@ -64,9 +63,6 @@ public class LogCollector {
             if (outputType.equals("kafka")) {
                 KafkaOutput kafkaOutput = new KafkaOutput(appConfig);
                 outputList.add(kafkaOutput);
-            } else if (outputType.equals("elasticsearch")) {
-                ElasticsearchOutput elasticsearchOutput = new ElasticsearchOutput(appConfig);
-                outputList.add(elasticsearchOutput);
             }
         }
 
@@ -130,6 +126,7 @@ public class LogCollector {
                         isLogContent.set(false);
                     } else if (isLogContent.get()) {
                         LogEvent logEvent = new LogEvent();
+                        logEvent.setCluster(appConfig.getHadoopCluster());
                         logEvent.setContainerInfo(container);
                         logEvent.setLogType(logType.get());
                         logEvent.setLogLastModifiedTime(logLastModifiedTime.get());

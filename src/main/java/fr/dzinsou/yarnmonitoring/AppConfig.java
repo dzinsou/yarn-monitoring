@@ -1,6 +1,7 @@
 package fr.dzinsou.yarnmonitoring;
 
 public class AppConfig {
+    private String hadoopCluster;
     private String hadoopConf;
     private String hadoopUser;
     private String hadoopKeytab;
@@ -13,12 +14,13 @@ public class AppConfig {
     private String outputKafkaConf;
     private String outputKafkaTopic;
 
-    private String[] outputElasticsearchHttpHostArray;
-    private Integer outputElasticsearchHttpPort;
-    private String outputElasticsearchHttpScheme;
-    private String outputElasticsearchIndexPattern;
-    private String outputElasticsearchDocType;
-    private String outputElasticsearchRequestTimeout;
+    public String getHadoopCluster() {
+        return hadoopCluster;
+    }
+
+    public void setHadoopCluster(String hadoopCluster) {
+        this.hadoopCluster = hadoopCluster;
+    }
 
     public String getHadoopConf() {
         return hadoopConf;
@@ -90,53 +92,5 @@ public class AppConfig {
 
     public void setOutputKafkaTopic(String outputKafkaTopic) {
         this.outputKafkaTopic = outputKafkaTopic;
-    }
-
-    public String[] getOutputElasticsearchHttpHostArray() {
-        return outputElasticsearchHttpHostArray;
-    }
-
-    public void setOutputElasticsearchHttpHostArray(String[] outputElasticsearchHttpHostArray) {
-        this.outputElasticsearchHttpHostArray = outputElasticsearchHttpHostArray;
-    }
-
-    public Integer getOutputElasticsearchHttpPort() {
-        return outputElasticsearchHttpPort;
-    }
-
-    public void setOutputElasticsearchHttpPort(Integer outputElasticsearchHttpPort) {
-        this.outputElasticsearchHttpPort = outputElasticsearchHttpPort;
-    }
-
-    public String getOutputElasticsearchHttpScheme() {
-        return outputElasticsearchHttpScheme;
-    }
-
-    public void setOutputElasticsearchHttpScheme(String outputElasticsearchHttpScheme) {
-        this.outputElasticsearchHttpScheme = outputElasticsearchHttpScheme;
-    }
-
-    public String getOutputElasticsearchIndexPattern() {
-        return outputElasticsearchIndexPattern;
-    }
-
-    public void setOutputElasticsearchIndexPattern(String outputElasticsearchIndexPattern) {
-        this.outputElasticsearchIndexPattern = outputElasticsearchIndexPattern;
-    }
-
-    public String getOutputElasticsearchDocType() {
-        return outputElasticsearchDocType;
-    }
-
-    public void setOutputElasticsearchDocType(String outputElasticsearchDocType) {
-        this.outputElasticsearchDocType = outputElasticsearchDocType;
-    }
-
-    public String getOutputElasticsearchRequestTimeout() {
-        return outputElasticsearchRequestTimeout;
-    }
-
-    public void setOutputElasticsearchRequestTimeout(String outputElasticsearchRequestTimeout) {
-        this.outputElasticsearchRequestTimeout = outputElasticsearchRequestTimeout;
     }
 }
